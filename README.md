@@ -2,7 +2,7 @@
 
 This is an [unplugin](https://github.com/unjs/unplugin) (Vite, Rollup, Webpack, and esbuild) build tool for injecting [FormKit](https://formkit.com) into your Vue 3 application.
 
-> **Note:** This plugin is still in development and is not yet ready for production use.
+> **Note:** This plugin is still still experimental and may change in the future.
 
 ## What is it?
 
