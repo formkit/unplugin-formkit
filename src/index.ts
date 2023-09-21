@@ -156,6 +156,7 @@ async function injectFormKitProviderJS(
         const callee = b.identifier(
           blockInitializerExpressionNames['createVNode'],
         )
+
         const simpleCall = b.callExpression(callee, [
           b.identifier(importedFormKitLazyProvider as string),
           configFile
@@ -228,8 +229,9 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     async transform(code) {
       // Replace all instances of `/* @__formkit_config__ */` in the code
       // with the resolved path to the formkit.config.{ts,js,mjs} file.
-      code = code.replace(FORMKIT_CONFIG_RE, `"${absoluteConfigPath}")`)
-
+      if (absoluteConfigPath) {
+        code = code.replace(FORMKIT_CONFIG_RE, `"${absoluteConfigPath}")`)
+      }
       // Test if the given code is a likely candidate for FormKit usage.
       if (CONTAINS_FORMKIT_RE.test(code)) {
         const injectedCode = await injectFormKitProviderJS(
