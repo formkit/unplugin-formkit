@@ -1,5 +1,7 @@
 # unplugin-formkit
 
+[![CI](https://github.com/formkit/unplugin-formkit/actions/workflows/ci.yml/badge.svg)](https://github.com/formkit/unplugin-formkit/actions/workflows/ci.yml)
+
 This is an [unplugin](https://github.com/unjs/unplugin) (Vite, Rollup, Webpack, and esbuild) build tool for injecting [FormKit](https://formkit.com) into your Vue 3 application.
 
 > **Note:** This plugin is still still experimental and may change in the future.
