@@ -4,6 +4,60 @@ This is an [unplugin](https://github.com/unjs/unplugin) (Vite, Rollup, Webpack, 
 
 > **Note:** This plugin is still in development and is not yet ready for production use.
 
+## What is it?
+
+This plugin eliminates the need to register the global formkit plugin. Instead, it will automatically inject FormKit into your Vue 3 application at the point of use.
+
+By default it will attempt to load a `formkit.config.{ts,js,mjs}` file in the root of your project.
+
+```vue
+<script setup>
+import { FormKit } from '@formkit/vue'
+</script>
+
+<template>
+  <FormKit type="form">
+    <ForKit
+      type="text"
+      name="username"
+    />
+    <ForKit
+      type="password"
+      name="password"
+    />
+  </FormKit>
+</template>
+```
+
+Into the following:
+
+
+```vue
+<script setup>
+import { FormKit, FormKitConfigProvider } from '@formkit/vue'
+</script>
+
+<template>
+  <Suspense>
+    <FormKitConfigProvider :config="./formkit.config.ts">
+      <FormKit type="form">
+        <ForKit
+          type="text"
+          name="username"
+        />
+        <ForKit
+          type="password"
+          name="password"
+        />
+      </FormKit>
+    </FormKit>
+  </Suspense>
+</template>
+```
+
+> **Note:** The `<Suspense>` boundary and configuration loader is only injected if not already in the component tree.
+
+
 ## Installation
 
 ```bash
