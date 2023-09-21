@@ -2,5 +2,10 @@
 </script>
 
 <template>
-  <h1>Hello Vue</h1>
+  <nav>
+    <RouterLink to="/">Home</RouterLink>
+    <RouterLink to="/page-a">Page A</RouterLink>
+    <RouterLink to="/page-b">Page B</RouterLink>
+  </nav>
+  <RouterView />
 </template>

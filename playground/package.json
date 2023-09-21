@@ -1,11 +1,17 @@
 {
   "private": true,
   "scripts": {
-    "dev": "nodemon -w '../src/**/*.ts' -e .ts -x vite"
+    "dev": "nodemon -w '../src/**/*.ts' -e .ts -x vite",
+    "dev-vite": "vite dev",
+    "build": "vite build"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",
     "vite": "^4.4.9",
     "vite-plugin-inspect": "^0.7.38"
+  },
+  "dependencies": {
+    "@formkit/vue": "^1.1.0",
+    "vue-router": "^4.2.4"
   }
 }
