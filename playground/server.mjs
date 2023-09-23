@@ -77,7 +77,7 @@ export async function createServer(
       } else {
         template = indexProd
         // @ts-ignore
-        render = (await import('./dist/server/entry-server.js')).render
+        render = (await import('./dist/server/entry-server.mjs')).render
       }
 
       const [appHtml, preloadLinks] = await render(url, manifest)
