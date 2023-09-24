@@ -2,6 +2,7 @@ import type { UnpluginFactory } from 'unplugin'
 import { createUnplugin } from 'unplugin'
 import type { Options } from './types'
 import { parse, print, visit } from 'recast'
+import { parser } from 'recast/parsers/babel'
 import { namedTypes, builders as b, NodePath } from 'ast-types'
 import { resolve } from 'pathe'
 import { existsSync } from 'fs'
@@ -19,21 +20,6 @@ const blockInitializers = [
   'createVNode',
 ]
 
-function isId(id: namedTypes.Node): id is namedTypes.Identifier {
-  return id.type === 'Identifier'
-}
-
-function isImport(node: namedTypes.Node): node is namedTypes.ImportDeclaration {
-  return node.type === 'ImportDeclaration'
-}
-
-function importFrom(node: namedTypes.Node): string | undefined {
-  if (isImport(node) && isStr(node.source.value)) {
-    return node.source.value
-  }
-  return undefined
-}
-
 type DiscriminateUnion<T, K extends keyof T, V extends T[K]> = Extract<
   T,
   Record<K, V>
@@ -45,6 +31,11 @@ type MapDiscriminatedUnion<T extends Record<K, string>, K extends keyof T> = {
 
 type ASTNodeMap = MapDiscriminatedUnion<namedTypes.ASTNode, 'type'>
 
+/**
+ * A generic to type-narrow the given AST node to the given type of ast node.
+ * @param node - The AST node to check.
+ * @param type - The type of AST node to check against.
+ */
 function isType<T extends namedTypes.ASTNode['type']>(
   node: unknown,
   type: T,
@@ -53,10 +44,15 @@ function isType<T extends namedTypes.ASTNode['type']>(
   return typeof node === 'object' && 'type' in node && node.type === type
 }
 
-function isSequence(
-  node: namedTypes.Node,
-): node is namedTypes.SequenceExpression {
-  return node.type === 'SequenceExpression'
+/**
+ * Attempt to get the import "from" value from the given AST node.
+ * @param node - The AST node to check.
+ */
+function importFrom(node: namedTypes.Node): string | undefined {
+  if (isType(node, 'ImportDeclaration') && isStr(node.source.value)) {
+    return node.source.value
+  }
+  return undefined
 }
 
 function insertImport(
@@ -88,11 +84,18 @@ function insertImport(
   }
 }
 
-async function injectFormKitProviderJS(
+/**
+ * Walk the AST and inject the FormKitProvider into the code where needed. This
+ * function works specifically for Vue 3 SFCs *after* @vitejs/plugin-vue has
+ * processed them for frontend usage.
+ *
+ * @param code - The code to inject the FormKitProvider into.
+ * @param configFile - The path to the FormKit configuration file.
+ */
+async function injectProvider(
   code: string,
   configFile?: string,
 ): Promise<{ code: string; map?: string }> {
-  const parser = await import('recast/parsers/babel')
   const ast = parse(code, { parser })
   const componentName = 'FormKitLazyProvider'
   // importedName => localName
@@ -121,7 +124,10 @@ async function injectFormKitProviderJS(
       }
     },
     visitImportSpecifier(path) {
-      if (isId(path.node.imported) && importFrom(path.parent?.node) === 'vue') {
+      if (
+        isType(path.node.imported, 'Identifier') &&
+        importFrom(path.parent?.node) === 'vue'
+      ) {
         if (path.node.imported.name === componentName) {
           importedFormKitLazyProvider = (path.node.local?.name ??
             path.node.imported.name) as string
@@ -141,11 +147,11 @@ async function injectFormKitProviderJS(
     },
     visitCallExpression(path) {
       if (
-        isId(path.node.callee) &&
+        isType(path.node.callee, 'Identifier') &&
         Object.values(blockInitializerExpressionNames).includes(
           path.node.callee.name,
         ) &&
-        isSequence(path.parent.node)
+        isType(path.parent.node, 'SequenceExpression')
       ) {
         if (!('createVNode' in blockInitializerExpressionNames)) {
           insertImport(path as any, 'createVNode', '__createVNode', 'vue')
@@ -190,6 +196,10 @@ async function injectFormKitProviderJS(
 
 const FORMKIT_CONFIG_RE = /(\/\*\s?@__formkit\.config\.ts__\s?\*\/.+)\)/g
 
+/**
+ * Resolve the absolute path to the configuration file.
+ * @param configFile - The configuration file to attempt to resolve.
+ */
 function resolveConfig(configFile: string): string | undefined {
   const exts = ['ts', 'mjs', 'js']
   const cwd = process.cwd()
@@ -205,7 +215,16 @@ function resolveConfig(configFile: string): string | undefined {
   return paths.find((path) => existsSync(path))
 }
 
+/**
+ * Determine if the file being processed is a vue file. This regex accounts for
+ * query strings being appended to the file name.
+ */
 const VUE_FILE_RE = /\.vue(?:\?.+)?$/i
+
+/**
+ * A relatively cheap, albeit not foolproof, regex to determine if the code
+ * being processed contains FormKit usage.
+ */
 const CONTAINS_FORMKIT_RE =
   /resolveComponent\("FormKit"\)|from ['"]@formkit\/vue['"]/
 
@@ -214,30 +233,26 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     configFile?: string
   } = { configFile: './formkit.config' },
 ) => {
-  const absoluteConfigPath = resolveConfig(
-    options.configFile || './formkit.config',
-  )
+  const configPath = resolveConfig(options.configFile || './formkit.config')
 
   return {
-    name: 'lazy-formkit',
+    name: 'unplugin-formkit',
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
     transformInclude(id: string) {
       return VUE_FILE_RE.test(id) || id.includes('@formkit/vue')
     },
+
     // just like rollup transform
     async transform(code) {
       // Replace all instances of `/* @__formkit_config__ */` in the code
       // with the resolved path to the formkit.config.{ts,js,mjs} file.
-      if (absoluteConfigPath) {
-        code = code.replace(FORMKIT_CONFIG_RE, `"${absoluteConfigPath}")`)
+      if (configPath) {
+        code = code.replace(FORMKIT_CONFIG_RE, `"${configPath}")`)
       }
       // Test if the given code is a likely candidate for FormKit usage.
       if (CONTAINS_FORMKIT_RE.test(code)) {
-        const injectedCode = await injectFormKitProviderJS(
-          code,
-          absoluteConfigPath,
-        )
+        const injectedCode = await injectProvider(code, configPath)
         return injectedCode
       }
       return code

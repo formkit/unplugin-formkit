@@ -7,5 +7,7 @@
     <RouterLink to="/about">About</RouterLink>
     <RouterLink to="/contact">Contact</RouterLink>
   </nav>
-  <RouterView />
+  <Suspense>
+    <RouterView />
+  </Suspense>
 </template>
