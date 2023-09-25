@@ -1,22 +1,17 @@
 <script lang="ts">
 import { FormKit } from '@formkit/vue'
+
 export default {
-  setup() {
-    return {
-      msg: 'Contact page'
-    }
-  },
   components: {
-    FormKit
+    FormKit,
+    FormKitLazyProvider
   }
 }
 </script>
 
 <template>
-  <FormKitLazyProvider>
-    <div>
-      <h1>Nothing to see here</h1>
-      <FormKit type="checkbox" label="Check me out" />
-    </div>
-  </FormKitLazyProvider>
+  <div>
+    <h1>Nothing to see here</h1>
+    <FormKit type="text" label="Check me out" />
+  </div>
 </template>
