@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`index > injects import into script setup block 1`] = `
+"<script setup lang=\\"ts\\">
+import { FormKitLazyProvider } from '@formkit/vue'
+import { FormKit } from '@formkit/vue'
+</script>
+
+<template>
+<FormKitLazyProvider>
+  <FormKit
+    type=\\"text\\"
+    label=\\"Your name\\"
+    help=\\"Enter your name\\"
+  />
+</FormKitLazyProvider>
+</template>"
+`;
+
+exports[`index > injects setup block when using options api 1`] = `
+"<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
+<script lang=\\"ts\\">
+import { FormKit } from '@formkit/vue'
+
+export default {
+  components: {
+    FormKit
+  }
+}
+</script>
+
+<template>
+<FormKitLazyProvider>
+  <div>
+    <h1>Nothing to see here</h1>
+    <FormKit type=\\"text\\" label=\\"Check me out\\" />
+  </div>
+</FormKitLazyProvider>
+</template>"
+`;
+
+exports[`index > injects the template block into an normally structured sfc 1`] = `
+"<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
+<template>
+<FormKitLazyProvider>
+  <FormKit />
+</FormKitLazyProvider>
+</template>"
+`;
