@@ -4,7 +4,7 @@ import type { Options } from './types'
 import { resolve } from 'pathe'
 import { existsSync } from 'fs'
 import { parse } from '@vue/compiler-dom'
-import { RootNode, ElementNode } from '@vue/compiler-dom'
+import type { RootNode, ElementNode, AttributeNode } from '@vue/compiler-dom'
 
 function getRootBlock(
   root: RootNode,
@@ -23,6 +23,17 @@ function isSetupScript(node: ElementNode) {
   return node.props.some((prop) => prop.type === 6 && prop.name === 'setup')
 }
 
+function langAttr(node?: ElementNode): string {
+  if (!node) return ''
+  const langProp = node.props.find(
+    (prop) => prop.type === 6 && prop.name === 'lang',
+  ) as AttributeNode | undefined
+  if (langProp && langProp.value?.content) {
+    return ` lang="${langProp.value.content}"`
+  }
+  return ''
+}
+
 /**
  * Imports `FormKitLazyProvider` component into the script block of the SFC.
  * @param code - The SFC source code.
@@ -37,12 +48,13 @@ function injectProviderImport(code: string): string {
     console.error(err)
     return code
   }
+  const script = getRootBlock(root, 'script')
   const importStatement = `import { FormKitLazyProvider } from '@formkit/vue'`
   const setupScript = root.children.find(
     (node) => node.type === 1 && node.tag === 'script' && isSetupScript(node),
   ) as ElementNode | undefined
   if (!setupScript) {
-    return `<script setup>${importStatement}</script>
+    return `<script setup${langAttr(script)}>${importStatement}</script>
 ${code}`
   }
   const startAt = setupScript.children[0].loc.start.offset

@@ -18,7 +18,7 @@ import { FormKit } from '@formkit/vue'
 `;
 
 exports[`index > injects setup block when using options api 1`] = `
-"<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
+"<script setup lang=\\"ts\\">import { FormKitLazyProvider } from '@formkit/vue'</script>
 <script lang=\\"ts\\">
 import { FormKit } from '@formkit/vue'
 
