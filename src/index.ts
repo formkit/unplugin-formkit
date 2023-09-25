@@ -68,7 +68,12 @@ ${code}`
  * @param code - The SFC source code.
  * @param id - The ID of the SFC file.
  */
-function injectProviderComponent(code: string, id: string): string {
+function injectProviderComponent(
+  code: string,
+  id: string,
+  config?: boolean,
+  defaultConfig?: boolean,
+): string {
   let root: RootNode
   try {
     root = parse(code)
@@ -77,7 +82,9 @@ function injectProviderComponent(code: string, id: string): string {
     console.error(err)
     return code
   }
-  const open = '<FormKitLazyProvider>'
+  const open = `<FormKitLazyProvider${config ? ' config-file="true"' : ''}${
+    defaultConfig ? '' : ' :default-config="false"'
+  }>`
   const close = '</FormKitLazyProvider>'
   const template = getRootBlock(root, 'template')
   if (!template) {
@@ -127,7 +134,10 @@ const CONTAINS_FORMKIT_RE = /<FormKit|<form-kit/
 const FORMKIT_CONFIG_RE = /(\/\*\s?@__formkit\.config\.ts__\s?\*\/.+)\)/g
 
 export const unpluginFactory: UnpluginFactory<Options | undefined> = (
-  options = { configFile: './formkit.config' },
+  options = {
+    configFile: './formkit.config',
+    defaultConfig: true,
+  },
 ) => {
   const configPath = resolveConfig(options.configFile || './formkit.config')
 
@@ -148,7 +158,12 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
       }
       // Test if the given code is a likely candidate for FormKit usage.
       if (id.endsWith('.vue') && CONTAINS_FORMKIT_RE.test(code)) {
-        code = injectProviderComponent(injectProviderImport(code), id)
+        code = injectProviderComponent(
+          injectProviderImport(code),
+          id,
+          !!configPath,
+          options.defaultConfig,
+        )
       }
       return code
     },
