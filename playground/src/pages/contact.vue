@@ -3,8 +3,7 @@ import { FormKit } from '@formkit/vue'
 
 export default {
   components: {
-    FormKit,
-    FormKitLazyProvider
+    FormKit
   }
 }
 </script>
