@@ -143,6 +143,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
 
   return {
     name: 'unplugin-formkit',
+    enforce: 'pre',
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
     transformInclude(id: string) {
