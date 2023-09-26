@@ -109,15 +109,15 @@ function injectProviderComponent(
  */
 function resolveConfig(configFile: string): string | undefined {
   const exts = ['ts', 'mjs', 'js']
-  const cwd = process.cwd()
+  const dir = configFile.startsWith('.') ? process.cwd() : ''
   let paths: string[] = []
 
   if (exts.some((ext) => configFile.endsWith(ext))) {
     // If the config file has an extension, we don't need to try them all.
-    paths = [resolve(cwd, configFile)]
+    paths = [resolve(dir, configFile)]
   } else {
     // If the config file doesn’t have an extension, try them all.
-    paths = exts.map((ext) => resolve(cwd, `${configFile}.${ext}`))
+    paths = exts.map((ext) => resolve(dir, `${configFile}.${ext}`))
   }
   return paths.find((path) => existsSync(path))
 }
