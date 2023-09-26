@@ -119,7 +119,6 @@ function resolveConfig(configFile: string): string | undefined {
     // If the config file doesn’t have an extension, try them all.
     paths = exts.map((ext) => resolve(dir, `${configFile}.${ext}`))
   }
-  console.log(paths)
   return paths.find((path) => existsSync(path))
 }
 
