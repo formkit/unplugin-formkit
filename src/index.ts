@@ -119,6 +119,7 @@ function resolveConfig(configFile: string): string | undefined {
     // If the config file doesn’t have an extension, try them all.
     paths = exts.map((ext) => resolve(dir, `${configFile}.${ext}`))
   }
+  console.log(paths)
   return paths.find((path) => existsSync(path))
 }
 
@@ -147,7 +148,11 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
     transformInclude(id: string) {
-      return id.endsWith('.vue') || id.includes('@formkit/vue')
+      return (
+        id.endsWith('.vue') ||
+        id.includes('@formkit/vue') ||
+        id.endsWith('packages/vue/dist/index.mjs')
+      )
     },
 
     // just like rollup transform
