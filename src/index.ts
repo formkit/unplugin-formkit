@@ -131,7 +131,8 @@ const CONTAINS_FORMKIT_RE = /<FormKit|<form-kit/
 /**
  * A regex to find the @__formkit_config__ comment in the code.
  */
-const FORMKIT_CONFIG_RE = /(\/\*\s?@__formkit\.config\.ts__\s?\*\/.+)\)/g
+const FORMKIT_CONFIG_RE =
+  /(\/\*\s?@__formkit\.config\.ts__\s?\*\/(?:.|\n)+?)\)/g
 
 export const unpluginFactory: UnpluginFactory<Options | undefined> = (
   options = {
@@ -150,6 +151,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
       return (
         id.endsWith('.vue') ||
         id.includes('@formkit/vue') ||
+        id.includes('@formkit_vue') ||
         id.endsWith('packages/vue/dist/index.mjs')
       )
     },
