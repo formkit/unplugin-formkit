@@ -160,8 +160,17 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     async transform(code, id) {
       // Replace all instances of `/* @__formkit_config__ */` in the code
       // with the resolved path to the formkit.config.{ts,js,mjs} file.
-      if (configPath) {
+      if (configPath && FORMKIT_CONFIG_RE.test(code)) {
         code = code.replace(FORMKIT_CONFIG_RE, `"${configPath}")`)
+        if (options.defaultConfig === false) {
+          // If the user has explicitly disabled the default config, we need
+          // to remove the defaultConfig from the FormKitConfigLoader. We can
+          // do this by cutting the /* @__default-config__ */ comment area.
+          code = code.replace(
+            /\/\* @__default-config__ \*\/(?:.|\n)+?\/\* @__default-config__ \*\//gi,
+            '',
+          )
+        }
       }
       // Test if the given code is a likely candidate for FormKit usage.
       if (id.endsWith('.vue') && CONTAINS_FORMKIT_RE.test(code)) {
