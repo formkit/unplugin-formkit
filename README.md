@@ -31,7 +31,7 @@ import { FormKit } from '@formkit/vue'
 </template>
 ```
 
-Into the following:
+Into the (conceptually) following:
 
 
 ```vue
@@ -57,7 +57,8 @@ import { FormKit, FormKitConfigProvider } from '@formkit/vue'
 </template>
 ```
 
-> **Note:** The `<Suspense>` boundary and configuration loader is only injected if not already in the component tree.
+> [!NOTE]
+> The `<Suspense>` boundary and configuration loader is only injected if not already in the component tree. These runtime determinations are part of the `<FormKitLazyProvider>` component, not this plugin.
 
 
 ## Installation
@@ -75,17 +76,20 @@ import { formkit } from 'unplugin-formkit'
 
 export default defineConfig({
   plugins: [
+    formkit(),
     vue(),
-    formkit()
   ]
 })
 ```
 
-> **Important:** Order matters — this plugin should always be placed *after* the Vue plugin.
+> **Important:** Order matters — this plugin should always be placed *before* the Vue plugin.
 
 ## Usage
 
 Once installed, you can use FormKit in your Vue components without any further configuration — FormKit’s configuration will automatically be injected into your application at the point of use.
+
+> [!WARNING]  
+> Because a global plugin is not installed, you will not be able to use the `this.$formkit` API when using options API components.
 
 To add some FormKit configuration to your project, simply create a `formkit.config.ts` (or `.js` or `.mjs`) file in the root of your project (adjacent to your `vite.config.ts` file) and export a configuration object:
 
