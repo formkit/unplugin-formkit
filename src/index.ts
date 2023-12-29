@@ -173,7 +173,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     },
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
-    transformInclude(_id: string) {
+    transformInclude() {
       // TODO: resolve why @formkit/vue is not always identifiable by the id
       // and remove this early return workaround:
       return true
