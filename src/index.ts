@@ -10,9 +10,25 @@ function getRootBlock(
   root: RootNode,
   block: 'template' | 'script' | 'style',
 ): ElementNode | undefined {
-  return root.children.find((node) => node.type === 1 && node.tag === block) as
-    | ElementNode
-    | undefined
+  const node = root.children.find(
+    (node) => node.type === 1 && node.tag === block,
+  ) as ElementNode | undefined
+  if (node && block === 'template' && node.children.length === 1) {
+    const rootChild = node.children[0].type === 1 ? node.children[0] : undefined
+    const tag = (rootChild?.tag ?? '').toLocaleLowerCase()
+    if (
+      rootChild &&
+      tag !== 'formkit' &&
+      tag !== 'form-kit' &&
+      rootChild.isSelfClosing === false
+    ) {
+      // In this case the component has a root node that is not formkit and is
+      // not self-closing, like, perhaps, a div. We need to move the provider
+      // inside this div instead of outside it.
+      return rootChild
+    }
+  }
+  return node
 }
 
 /**
@@ -157,7 +173,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     },
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
-    transformInclude(id: string) {
+    transformInclude(_id: string) {
       // TODO: resolve why @formkit/vue is not always identifiable by the id
       // and remove this early return workaround:
       return true

@@ -17,6 +17,17 @@ import { FormKit } from '@formkit/vue'
 </template>"
 `;
 
+exports[`index > injects inside root node if there is one 1`] = `
+"<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
+<template>
+    <div>
+    
+<FormKitLazyProvider>  <FormKit /></FormKitLazyProvider>
+
+    </div>
+  </template>"
+`;
+
 exports[`index > injects setup block when using options api 1`] = `
 "<script setup lang=\\"ts\\">import { FormKitLazyProvider } from '@formkit/vue'</script>
 <script lang=\\"ts\\">
@@ -30,12 +41,12 @@ export default {
 </script>
 
 <template>
-<FormKitLazyProvider>
   <div>
-    <h1>Nothing to see here</h1>
-    <FormKit type=\\"text\\" label=\\"Check me out\\" />
+    
+<FormKitLazyProvider><h1>Nothing to see here</h1>
+    <FormKit type=\\"text\\" label=\\"Check me out\\" </FormKitLazyProvider>
+/>
   </div>
-</FormKitLazyProvider>
 </template>"
 `;
 
