@@ -73,14 +73,14 @@ function injectProviderComponent(
   id: string,
   config?: boolean,
   defaultConfig?: boolean,
-): string {
+): { code: string; map?: any } {
   let root: RootNode
   try {
     root = parse(code)
   } catch (err) {
     console.warn('Failed to parse SFC:', code)
     console.error(err)
-    return code
+    return { code }
   }
   const open = `<FormKitLazyProvider${config ? ' config-file="true"' : ''}${
     defaultConfig ? '' : ' :default-config="false"'
@@ -91,7 +91,7 @@ function injectProviderComponent(
     console.warn(
       `To <template> block found in ${id}. Skipping FormKitLazyProvider injection.`,
     )
-    return code
+    return { code, map: null }
   }
   const before = code.substring(0, template.loc.start.offset + 10)
   const content = code.substring(
@@ -100,7 +100,8 @@ function injectProviderComponent(
   )
   const after = code.substring(template.loc.end.offset - 11)
   code = `${before}\n${open}${content}${close}\n${after}`
-  return code
+
+  return { code, map: null }
 }
 
 /**
@@ -145,6 +146,15 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
   return {
     name: 'unplugin-formkit',
     enforce: 'pre',
+    vite: {
+      config() {
+        return {
+          optimizeDeps: {
+            exclude: ['@formkit/vue'],
+          },
+        }
+      },
+    },
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
     transformInclude(id: string) {
@@ -174,17 +184,19 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
             '',
           )
         }
+        // Parse the modified code using recast and return the code with a sourcemap.
+        return { code, map: null }
       }
       // Test if the given code is a likely candidate for FormKit usage.
       if (id.endsWith('.vue') && CONTAINS_FORMKIT_RE.test(code)) {
-        code = injectProviderComponent(
+        return injectProviderComponent(
           injectProviderImport(code),
           id,
           !!configPath,
           options.defaultConfig,
         )
       }
-      return code
+      return
     },
   }
 }
