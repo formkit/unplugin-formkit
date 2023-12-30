@@ -7,12 +7,14 @@ import { FormKit } from '@formkit/vue'
 </script>
 
 <template>
+  
 <FormKitLazyProvider>
-  <FormKit
+<FormKit
     type=\\"text\\"
     label=\\"Your name\\"
     help=\\"Enter your name\\"
   />
+
 </FormKitLazyProvider>
 </template>"
 `;
@@ -20,9 +22,11 @@ import { FormKit } from '@formkit/vue'
 exports[`index > injects inside root node if there is one 1`] = `
 "<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
 <template>
-    <div>
-    
-<FormKitLazyProvider>  <FormKit /></FormKitLazyProvider>
+    <div class=\\"fizzbuzz\\">
+      
+<FormKitLazyProvider>
+<FormKit />
+</FormKitLazyProvider>
 
     </div>
   </template>"
@@ -43,8 +47,10 @@ export default {
 <template>
   <div>
     
-<FormKitLazyProvider><h1>Nothing to see here</h1>
-    <FormKit type=\\"text\\" label=\\"Check me out\\" </FormKitLazyProvider>
+<FormKitLazyProvider>
+<h1>Nothing to see here</h1>
+    <FormKit type=\\"text\\" label=\\"Check me out\\" 
+</FormKitLazyProvider>
 />
   </div>
 </template>"
@@ -53,8 +59,10 @@ export default {
 exports[`index > injects the template block into an normally structured sfc 1`] = `
 "<script setup>import { FormKitLazyProvider } from '@formkit/vue'</script>
 <template>
+  
 <FormKitLazyProvider>
-  <FormKit />
+<FormKit />
+
 </FormKitLazyProvider>
 </template>"
 `;

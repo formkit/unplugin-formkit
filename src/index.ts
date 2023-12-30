@@ -109,13 +109,11 @@ function injectProviderComponent(
     )
     return { code, map: null }
   }
-  const before = code.substring(0, template.loc.start.offset + 10)
-  const content = code.substring(
-    template.loc.start.offset + 10,
-    template.loc.end.offset - 11,
-  )
+  const startInsertAt = template.children[0].loc.start.offset
+  const before = code.substring(0, startInsertAt)
+  const content = code.substring(startInsertAt, template.loc.end.offset - 11)
   const after = code.substring(template.loc.end.offset - 11)
-  code = `${before}\n${open}${content}${close}\n${after}`
+  code = `${before}\n${open}\n${content}\n${close}\n${after}`
 
   return { code, map: null }
 }

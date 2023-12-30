@@ -32,7 +32,7 @@ describe('index', () => {
       (
         await plugin.transform(
           `<template>
-    <div>
+    <div class="fizzbuzz">
       <FormKit />
     </div>
   </template>`,
