@@ -67,6 +67,36 @@ function handleLoginSubmit(values: any) {
     ).toMatchSnapshot()
   })
 
+  it('injects inside root node with multiple child elements', async () => {
+    expect(
+      (
+        await plugin.transform(
+          `<script lang="ts" setup>
+function handleLoginSubmit(values: any) {
+  window.alert("You are logged in. Credentials: \n" + JSON.stringify(values));
+}
+</script>
+
+<template>
+  <div>
+    <main>
+    <p>
+    <FormKit type="form" submit-label="login" @submit="handleLoginSubmit">
+      <FormKit type="email" label="Email" name="email" />
+      <FormKit type="password" label="Password" name="password" />
+    </FormKit>
+    </p>
+    </main>
+    <div class="filler">Here we go</div>
+  </div>
+</template>
+`,
+          'test.vue',
+        )
+      ).code,
+    ).toMatchSnapshot()
+  })
+
   it('injects import into script setup block', async () => {
     expect(
       (await plugin.transform(aboutSFCFile, 'about.vue')).code,

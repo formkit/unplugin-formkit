@@ -107,14 +107,16 @@ function injectProviderComponent(
   const template = getRootBlock(root, 'template')
   if (!template) {
     console.warn(
-      `To <template> block found in ${id}. Skipping FormKitLazyProvider injection.`,
+      `No <template> block found in ${id}. Skipping FormKitLazyProvider injection.`,
     )
     return { code, map: null }
   }
   const startInsertAt = template.children[0].loc.start.offset
+  const endInsertAt =
+    template.children[template.children.length - 1].loc.end.offset
   const before = code.substring(0, startInsertAt)
-  const content = code.substring(startInsertAt, template.loc.end.offset - 11)
-  const after = code.substring(template.loc.end.offset - 11)
+  const content = code.substring(startInsertAt, endInsertAt)
+  const after = code.substring(endInsertAt)
   code = `${before}\n${open}\n${content}\n${close}\n${after}`
   return { code, map: null }
 }
