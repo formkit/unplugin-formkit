@@ -20,7 +20,9 @@ function getRootBlock(
       rootChild &&
       tag !== 'formkit' &&
       tag !== 'form-kit' &&
-      rootChild.isSelfClosing === false
+      tag !== 'formkitschema' &&
+      tag !== 'form-kit-schema' &&
+      !rootChild.isSelfClosing
     ) {
       // In this case the component has a root node that is not formkit and is
       // not self-closing, like, perhaps, a div. We need to move the provider
@@ -114,7 +116,6 @@ function injectProviderComponent(
   const content = code.substring(startInsertAt, template.loc.end.offset - 11)
   const after = code.substring(template.loc.end.offset - 11)
   code = `${before}\n${open}\n${content}\n${close}\n${after}`
-
   return { code, map: null }
 }
 
