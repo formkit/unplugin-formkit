@@ -80,12 +80,6 @@
     "start": "esno src/index.ts",
     "test": "vitest"
   },
-  "peerDependencies": {
-    "esbuild": "*",
-    "rollup": "^3",
-    "vite": ">=3",
-    "webpack": "^4 || ^5"
-  },
   "peerDependenciesMeta": {
     "webpack": {
       "optional": true
