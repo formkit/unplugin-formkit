@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`virtual configuration file > generates correct configuration when custom config is available 1`] = `
-"import { defaultConfig } from \\"@formkit/vue\\"
+"import { defaultConfig } from \\"@formkit/vue\\";
 import _config from \\"~/playground/formkit.config.ts\\";
 const config = typeof _config === 'function' ? _config() : _config;
 export default defaultConfig(config);"
@@ -19,7 +19,7 @@ export default config;"
 `;
 
 exports[`virtual configuration file > generates correct virtual configuration with default options 1`] = `
-"import { defaultConfig } from \\"@formkit/vue\\"
+"import { defaultConfig } from \\"@formkit/vue\\";
 const config = {};
 export default defaultConfig(config);"
 `;
@@ -45,8 +45,10 @@ import { FormKit } from '@formkit/vue'
 `;
 
 exports[`vue file transformations > injects inside root node if there is one 1`] = `
-"<script setup>import { FormKitProvider } from \\"@formkit/vue\\";
-import __formkitConfig from \\"virtual:formkit-config\\";</script>
+"<script setup>
+import { FormKitProvider } from \\"@formkit/vue\\";
+import __formkitConfig from \\"virtual:formkit-config\\";
+</script>
 <template>
     <div class=\\"fizzbuzz\\">
       
@@ -114,8 +116,10 @@ function handleLoginSubmit(values: any) {
 `;
 
 exports[`vue file transformations > injects setup block when using options api 1`] = `
-"<script setup lang=\\"ts\\">import { FormKitProvider } from \\"@formkit/vue\\";
-import __formkitConfig from \\"virtual:formkit-config\\";</script>
+"<script setup lang=\\"ts\\">
+import { FormKitProvider } from \\"@formkit/vue\\";
+import __formkitConfig from \\"virtual:formkit-config\\";
+</script>
 <script lang=\\"ts\\">
 import { FormKit } from '@formkit/vue'
 
@@ -139,8 +143,10 @@ export default {
 `;
 
 exports[`vue file transformations > injects the template block into an normally structured sfc 1`] = `
-"<script setup>import { FormKitProvider } from \\"@formkit/vue\\";
-import __formkitConfig from \\"virtual:formkit-config\\";</script>
+"<script setup>
+import { FormKitProvider } from \\"@formkit/vue\\";
+import __formkitConfig from \\"virtual:formkit-config\\";
+</script>
 <template>
   
 <FormKitProvider :config=\\"__formkitConfig\\">
