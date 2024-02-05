@@ -6,6 +6,17 @@ import { existsSync } from 'fs'
 import { parse } from '@vue/compiler-dom'
 import type { RootNode, ElementNode, AttributeNode } from '@vue/compiler-dom'
 
+const FORMKIT_CONFIG_ID = 'virtual:formkit-config'
+const FORMKIT_PROVIDER_IMPORT_STATEMENT = [
+  `import { FormKitProvider } from "@formkit/vue";`,
+  `import __formkitConfig from "${FORMKIT_CONFIG_ID}";`,
+].join('\n')
+/**
+ * A relatively cheap, albeit not foolproof, regex to determine if the code
+ * being processed contains FormKit usage.
+ */
+const CONTAINS_FORMKIT_RE = /<FormKit|<form-kit/
+
 function getRootBlock(
   root: RootNode,
   block: 'template' | 'script' | 'style',
@@ -53,7 +64,7 @@ function langAttr(node?: ElementNode): string {
 }
 
 /**
- * Imports `FormKitLazyProvider` component into the script block of the SFC.
+ * Imports `FormKitProvider` component into the script block of the SFC.
  * @param code - The SFC source code.
  * @param id - The ID of the SFC file.
  */
@@ -67,31 +78,33 @@ function injectProviderImport(code: string): string {
     return code
   }
   const script = getRootBlock(root, 'script')
-  const importStatement = `import { FormKitLazyProvider } from '@formkit/vue'`
   const setupScript = root.children.find(
-    (node) => node.type === 1 && node.tag === 'script' && isSetupScript(node),
-  ) as ElementNode | undefined
+    (node): node is ElementNode =>
+      node.type === 1 && node.tag === 'script' && isSetupScript(node),
+  )
   if (!setupScript) {
-    return `<script setup${langAttr(script)}>${importStatement}</script>
-${code}`
+    return [
+      `<script setup${langAttr(script)}>`,
+      FORMKIT_PROVIDER_IMPORT_STATEMENT,
+      `</script>`,
+      code,
+    ].join('\n')
   }
   const startAt = setupScript.children[0].loc.start.offset
   const before = code.substring(0, startAt)
   const after = code.substring(startAt)
-  return `${before}\n${importStatement}${after}`
+  return `${before}\n${FORMKIT_PROVIDER_IMPORT_STATEMENT}${after}`
 }
 
 /**
- * Injects the `<FormKitLazyProvider>` component import into the SFC.
+ * Injects the `<FormKitProvider>` component import into the SFC.
  * @param code - The SFC source code.
  * @param id - The ID of the SFC file.
  */
 function injectProviderComponent(
   code: string,
   id: string,
-  config?: boolean,
-  defaultConfig?: boolean,
-): { code: string; map?: any } {
+): { code: string; map?: null } {
   let root: RootNode
   try {
     root = parse(code)
@@ -100,24 +113,25 @@ function injectProviderComponent(
     console.error(err)
     return { code }
   }
-  const open = `<FormKitLazyProvider${config ? ' config-file="true"' : ''}${
-    defaultConfig ? '' : ' :default-config="false"'
-  }>`
-  const close = '</FormKitLazyProvider>'
   const template = getRootBlock(root, 'template')
   if (!template) {
     console.warn(
-      `No <template> block found in ${id}. Skipping FormKitLazyProvider injection.`,
+      `No <template> block found in ${id}. Skipping FormKitProvider injection.`,
     )
     return { code, map: null }
   }
   const startInsertAt = template.children[0].loc.start.offset
   const endInsertAt =
     template.children[template.children.length - 1].loc.end.offset
-  const before = code.substring(0, startInsertAt)
-  const content = code.substring(startInsertAt, endInsertAt)
-  const after = code.substring(endInsertAt)
-  code = `${before}\n${open}\n${content}\n${close}\n${after}`
+
+  code = [
+    code.substring(0, startInsertAt),
+    `<FormKitProvider :config="__formkitConfig">`,
+    code.substring(startInsertAt, endInsertAt),
+    '</FormKitProvider>',
+    code.substring(endInsertAt),
+  ].join('\n')
+
   return { code, map: null }
 }
 
@@ -140,80 +154,59 @@ function resolveConfig(configFile: string): string | undefined {
   return paths.find((path) => existsSync(path))
 }
 
-/**
- * A relatively cheap, albeit not foolproof, regex to determine if the code
- * being processed contains FormKit usage.
- */
-const CONTAINS_FORMKIT_RE = /<FormKit|<form-kit/
-
-/**
- * A regex to find the @__formkit_config__ comment in the code.
- */
-const FORMKIT_CONFIG_RE =
-  /(\/\*\s?@__formkit\.config\.ts__\s?\*\/(?:.|\n)+?)\)/g
-
 export const unpluginFactory: UnpluginFactory<Options | undefined> = (
   options = {
     configFile: './formkit.config',
     defaultConfig: true,
   },
 ) => {
-  const configPath = resolveConfig(options.configFile || './formkit.config')
-
   return {
     name: 'unplugin-formkit',
     enforce: 'pre',
-    vite: {
-      config() {
-        return {
-          optimizeDeps: {
-            exclude: ['@formkit/vue'],
-          },
-        }
-      },
+
+    resolveId(id) {
+      if (id === FORMKIT_CONFIG_ID) {
+        return id
+      }
     },
+
+    load(id) {
+      if (id === FORMKIT_CONFIG_ID) {
+        // Resolve FormKit configuration file path on-demand in case user has created/removed it since plugin was initialized.
+        const configPath = resolveConfig(
+          options.configFile || './formkit.config',
+        )
+        const customConfigDefinition = configPath
+          ? [
+              `import _config from "${configPath}";`,
+              `const config = typeof _config === 'function' ? _config() : _config;`,
+            ].join('\n')
+          : 'const config = {};'
+
+        if (options.defaultConfig !== false) {
+          return [
+            `import { defaultConfig } from "@formkit/vue";`,
+            customConfigDefinition,
+            `export default defaultConfig(config);`,
+          ].join('\n')
+        }
+
+        return [customConfigDefinition, `export default config;`].join('\n')
+      }
+    },
+
     // webpack's id filter is outside of loader logic,
     // an additional hook is needed for better perf on webpack
-    transformInclude() {
-      // TODO: resolve why @formkit/vue is not always identifiable by the id
-      // and remove this early return workaround:
-      return true
-      // return (
-      //   id.endsWith('.vue') ||
-      //   id.includes('@formkit/vue') ||
-      //   id.includes('@formkit_vue') ||
-      //   id.endsWith('packages/vue/dist/index.mjs')
-      // )
+    transformInclude(id) {
+      return id.endsWith('.vue')
     },
 
     // just like rollup transform
     async transform(code, id) {
-      // Replace all instances of `/* @__formkit_config__ */` in the code
-      // with the resolved path to the formkit.config.{ts,js,mjs} file.
-      if (configPath && FORMKIT_CONFIG_RE.test(code)) {
-        code = code.replace(FORMKIT_CONFIG_RE, `"${configPath}")`)
-        if (options.defaultConfig === false) {
-          // If the user has explicitly disabled the default config, we need
-          // to remove the defaultConfig from the FormKitConfigLoader. We can
-          // do this by cutting the /* @__default-config__ */ comment area.
-          code = code.replace(
-            /\/\* @__default-config__ \*\/(?:.|\n)+?\/\* @__default-config__ \*\//gi,
-            '',
-          )
-        }
-        // Parse the modified code using recast and return the code with a sourcemap.
-        return { code, map: null }
-      }
       // Test if the given code is a likely candidate for FormKit usage.
       if (id.endsWith('.vue') && CONTAINS_FORMKIT_RE.test(code)) {
-        return injectProviderComponent(
-          injectProviderImport(code),
-          id,
-          !!configPath,
-          options.defaultConfig,
-        )
+        return injectProviderComponent(injectProviderImport(code), id)
       }
-      return
     },
   }
 }
