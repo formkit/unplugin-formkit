@@ -128,10 +128,7 @@ function injectProviderComponent(
   const endInsertAt =
     template.children[template.children.length - 1].loc.end.offset
 
-  s.appendRight(
-    startInsertAt,
-    `<FormKitProvider :config="__formkitConfig">`,
-  )
+  s.appendRight(startInsertAt, `<FormKitProvider :config="__formkitConfig">`)
   s.appendLeft(endInsertAt, '</FormKitProvider>')
 }
 
