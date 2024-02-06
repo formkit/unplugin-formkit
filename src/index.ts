@@ -5,12 +5,13 @@ import { resolve } from 'pathe'
 import { existsSync } from 'fs'
 import { parse } from '@vue/compiler-dom'
 import type { RootNode, ElementNode, AttributeNode } from '@vue/compiler-dom'
+import MagicString from 'magic-string'
 
 const FORMKIT_CONFIG_ID = 'virtual:formkit-config'
-const FORMKIT_PROVIDER_IMPORT_STATEMENT = [
-  `import { FormKitProvider } from "@formkit/vue";`,
-  `import __formkitConfig from "${FORMKIT_CONFIG_ID}";`,
-].join('\n')
+const FORMKIT_PROVIDER_IMPORT_STATEMENT = `
+import { FormKitProvider } from "@formkit/vue";
+import __formkitConfig from "${FORMKIT_CONFIG_ID}";
+`
 /**
  * A relatively cheap, albeit not foolproof, regex to determine if the code
  * being processed contains FormKit usage.
@@ -67,15 +68,19 @@ function langAttr(node?: ElementNode): string {
  * Imports `FormKitProvider` component into the script block of the SFC.
  * @param code - The SFC source code.
  * @param id - The ID of the SFC file.
+ * @param s - A MagicString instance, for tracking sourcemaps.
  */
-function injectProviderImport(code: string): string {
+function injectProviderImport(
+  code: string,
+  s = new MagicString(code),
+): MagicString | undefined {
   let root: RootNode
   try {
     root = parse(code)
   } catch (err) {
     console.warn('Failed to parse SFC:', code)
     console.error(err)
-    return code
+    return
   }
   const script = getRootBlock(root, 'script')
   const setupScript = root.children.find(
@@ -83,56 +88,48 @@ function injectProviderImport(code: string): string {
       node.type === 1 && node.tag === 'script' && isSetupScript(node),
   )
   if (!setupScript) {
-    return [
-      `<script setup${langAttr(script)}>`,
-      FORMKIT_PROVIDER_IMPORT_STATEMENT,
-      `</script>`,
-      code,
-    ].join('\n')
+    const block = `<script setup${langAttr(script)}>${FORMKIT_PROVIDER_IMPORT_STATEMENT}</script>\n`
+    return s.prepend(block)
   }
+
   const startAt = setupScript.children[0].loc.start.offset
-  const before = code.substring(0, startAt)
-  const after = code.substring(startAt)
-  return `${before}\n${FORMKIT_PROVIDER_IMPORT_STATEMENT}${after}`
+  return s.appendLeft(startAt, FORMKIT_PROVIDER_IMPORT_STATEMENT)
 }
 
 /**
  * Injects the `<FormKitProvider>` component import into the SFC.
  * @param code - The SFC source code.
  * @param id - The ID of the SFC file.
+ * @param s - A MagicString instance, for tracking sourcemaps.
  */
 function injectProviderComponent(
   code: string,
   id: string,
-): { code: string; map?: null } {
+  s = new MagicString(code),
+): MagicString | undefined {
   let root: RootNode
   try {
     root = parse(code)
   } catch (err) {
     console.warn('Failed to parse SFC:', code)
     console.error(err)
-    return { code }
+    return
   }
+
   const template = getRootBlock(root, 'template')
   if (!template) {
     console.warn(
       `No <template> block found in ${id}. Skipping FormKitProvider injection.`,
     )
-    return { code, map: null }
+    return
   }
+
   const startInsertAt = template.children[0].loc.start.offset
   const endInsertAt =
     template.children[template.children.length - 1].loc.end.offset
 
-  code = [
-    code.substring(0, startInsertAt),
-    `<FormKitProvider :config="__formkitConfig">`,
-    code.substring(startInsertAt, endInsertAt),
-    '</FormKitProvider>',
-    code.substring(endInsertAt),
-  ].join('\n')
-
-  return { code, map: null }
+  s.appendRight(startInsertAt, `<FormKitProvider :config="__formkitConfig">`)
+  s.appendLeft(endInsertAt, '</FormKitProvider>')
 }
 
 /**
@@ -158,6 +155,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
   options = {
     configFile: './formkit.config',
     defaultConfig: true,
+    sourcemap: false,
   },
 ) => {
   return {
@@ -204,8 +202,25 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (
     // just like rollup transform
     async transform(code, id) {
       // Test if the given code is a likely candidate for FormKit usage.
-      if (id.endsWith('.vue') && CONTAINS_FORMKIT_RE.test(code)) {
-        return injectProviderComponent(injectProviderImport(code), id)
+      if (!id.endsWith('.vue') || !CONTAINS_FORMKIT_RE.test(code)) {
+        return
+      }
+
+      // Generate a MagicString instance to track changes to code
+      const s = new MagicString(code)
+
+      injectProviderComponent(code, id, s)
+
+      // We can save extra parsing time by not returning anything or adding imports if we haven't added the wrapper
+      if (!s.hasChanged()) {
+        return
+      }
+
+      injectProviderImport(code, s)
+
+      return {
+        code: s.toString(),
+        map: options.sourcemap ? s.generateMap({ hires: true }) : undefined,
       }
     },
   }
