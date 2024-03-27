@@ -72,11 +72,11 @@ Then add it to your `vite.config.ts` (or `rollup.config.ts` or webpack config et
 ```ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { formkit } from 'unplugin-formkit'
+import formkit from 'unplugin-formkit/vite'
 
 export default defineConfig({
   plugins: [
-    formkit(),
+    formkit({ /* options */ }),
     vue(),
   ]
 })
